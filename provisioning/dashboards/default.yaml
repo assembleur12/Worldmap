@@ -1,0 +1,7 @@
+apiVersion: 1
+
+providers:
+  - name: 'map_Geo'
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards
