@@ -1,4 +1,3 @@
-// Globe.tsx
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -10,7 +9,7 @@ interface GlobeProps {
 
 export const Globe: React.FC<GlobeProps> = ({ activities }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-
+  console.log('++++++++++++++++', activities);
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -125,6 +124,20 @@ export const Globe: React.FC<GlobeProps> = ({ activities }) => {
       const arcMaterial = new THREE.MeshBasicMaterial({ color: 0xffc107, transparent: true, opacity: 0.6 });
       const arc = new THREE.Mesh(arcGeometry, arcMaterial);
       scene.add(arc);
+    });
+
+    // Ajouter des marqueurs pour chaque activité
+    activities.forEach((activity) => {
+      const position = getPositionFromLatLng(activity.lat, activity.lng);
+
+      // Création d'une sphère pour représenter l'activité
+      const markerGeometry = new THREE.SphereGeometry(0.02, 16, 16);
+      const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+
+      // Positionner le marqueur sur le globe
+      marker.position.copy(position);
+      scene.add(marker);
     });
 
     // Nettoyage lors du démontage
