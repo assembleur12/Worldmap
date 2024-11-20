@@ -1,6 +1,7 @@
 // Globe.tsx
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Activity } from '../types'; // Assurez-vous que le type Activity est défini correctement
 
 interface GlobeProps {
@@ -21,9 +22,17 @@ export const Globe: React.FC<GlobeProps> = ({ activities }) => {
       0.1,
       1000
     );
-    const renderer = new THREE.WebGLRenderer();
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     containerRef.current.appendChild(renderer.domElement);
+
+    // Ajout des contrôles de rotation
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // Animation fluide
+    controls.dampingFactor = 0.05; // Facteur de lissage
+    controls.minDistance = 1.5; // Distance minimale de zoom
+    controls.maxDistance = 5; // Distance maximale de zoom
+    controls.rotateSpeed = 0.7; // Vitesse de rotation
 
     // Ajout de la texture de la Terre, des nuages, etc.
     const loader = new THREE.TextureLoader();
@@ -64,17 +73,29 @@ export const Globe: React.FC<GlobeProps> = ({ activities }) => {
     const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
     scene.add(clouds);
 
-    // Lumière
-    const light = new THREE.PointLight(0xffffff, 10, 100);
-    light.position.set(0, 0, 5);
-    scene.add(light);
+    // Lumières
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Lumière ambiante
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
 
     camera.position.z = 3;
 
     // Fonction d'animation
     const animate = () => {
       requestAnimationFrame(animate);
-      globe.rotation.y += 0.001;
+
+      // Mise à jour des contrôles
+      controls.update();
+
+      // Rotation automatique du globe si l'utilisateur ne l'utilise pas
+      if (!controls.enabled) {
+        globe.rotation.y += 0.001;
+      }
+
+      // Rendu
       renderer.render(scene, camera);
     };
     animate();
@@ -88,28 +109,10 @@ export const Globe: React.FC<GlobeProps> = ({ activities }) => {
 
     // Ajouter les arcs pour chaque activité
     activities.slice(-10).forEach((activity) => {
-      const startLat = activity.lat;
-      const startLng = activity.lng;
-      const endLat = activity.lat + Math.random() * 20 - 10;
-      const endLng = activity.lng + Math.random() * 20 - 10;
+      const start = getPositionFromLatLng(activity.lat, activity.lng);
+      const end = getPositionFromLatLng(activity.lat + Math.random() * 20 - 10, activity.lng + Math.random() * 20 - 10);
 
       const points = [];
-      const startPhi = (90 - startLat) * (Math.PI / 180);
-      const startTheta = (180 - startLng) * (Math.PI / 180);
-      const endPhi = (90 - endLat) * (Math.PI / 180);
-      const endTheta = (180 - endLng) * (Math.PI / 180);
-
-      const start = new THREE.Vector3(
-        Math.sin(startPhi) * Math.cos(startTheta),
-        Math.cos(startPhi),
-        Math.sin(startPhi) * Math.sin(startTheta)
-      );
-      const end = new THREE.Vector3(
-        Math.sin(endPhi) * Math.cos(endTheta),
-        Math.cos(endPhi),
-        Math.sin(endPhi) * Math.sin(endTheta)
-      );
-
       for (let i = 0; i <= 20; i++) {
         const t = i / 20;
         const middle = new THREE.Vector3().lerpVectors(start, end, t);
@@ -124,8 +127,9 @@ export const Globe: React.FC<GlobeProps> = ({ activities }) => {
       scene.add(arc);
     });
 
-    // Nettoyage lors du démontage du composant
+    // Nettoyage lors du démontage
     return () => {
+      controls.dispose();
       renderer.dispose();
       containerRef.current?.removeChild(renderer.domElement);
     };
