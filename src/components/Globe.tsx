@@ -10,6 +10,7 @@ interface GlobeProps {
 export const Globe: React.FC<GlobeProps> = ({ activities }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   console.log('++++++++++++++++', activities);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -35,18 +36,29 @@ export const Globe: React.FC<GlobeProps> = ({ activities }) => {
 
     // Ajout de la texture de la Terre, des nuages, etc.
     const loader = new THREE.TextureLoader();
-    const earthTexture = loader.load(
-      'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg'
-    );
-    const bumpMap = loader.load(
-      'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg'
-    );
-    const specularMap = loader.load(
-      'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg'
-    );
-    const cloudsTexture = loader.load(
-      'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png'
-    );
+    // Définir les URLs dans une variable
+    const textureUrls = {
+      earth: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg',
+      bump: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg',
+      specular:
+        'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg',
+      clouds:
+        'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png',
+    };
+
+    // Charger les textures à partir des URLs
+    const textures = {
+      earth: loader.load(textureUrls.earth),
+      bump: loader.load(textureUrls.bump),
+      specular: loader.load(textureUrls.specular),
+      clouds: loader.load(textureUrls.clouds),
+    };
+
+    // Utilisation
+    const earthTexture = textures.earth;
+    const bumpMap = textures.bump;
+    const specularMap = textures.specular;
+    const cloudsTexture = textures.clouds;
 
     // Globe
     const globeGeometry = new THREE.SphereGeometry(1, 64, 64);
@@ -107,15 +119,17 @@ export const Globe: React.FC<GlobeProps> = ({ activities }) => {
     };
 
     // Ajouter les arcs pour chaque activité
-    activities.slice(-10).forEach((activity) => {
+    activities.forEach((activity) => {
       const start = getPositionFromLatLng(activity.lat, activity.lng);
+      //console.log('start', start);
       const end = getPositionFromLatLng(activity.lat + Math.random() * 20 - 10, activity.lng + Math.random() * 20 - 10);
-
+      //console.log('end', end);
       const points = [];
       for (let i = 0; i <= 20; i++) {
         const t = i / 20;
         const middle = new THREE.Vector3().lerpVectors(start, end, t);
         middle.normalize().multiplyScalar(1 + Math.sin(Math.PI * t) * 0.2);
+        //console.log('middle', middle);
         points.push(middle);
       }
 
@@ -125,6 +139,8 @@ export const Globe: React.FC<GlobeProps> = ({ activities }) => {
       const arc = new THREE.Mesh(arcGeometry, arcMaterial);
       scene.add(arc);
     });
+
+    let activityCount = 0; // Compteur pour les activités
 
     // Ajouter des marqueurs pour chaque activité
     activities.forEach((activity) => {
@@ -138,8 +154,13 @@ export const Globe: React.FC<GlobeProps> = ({ activities }) => {
       // Positionner le marqueur sur le globe
       marker.position.copy(position);
       scene.add(marker);
+
+      // Incrémenter le compteur d'activités et de marqueurs
+      activityCount++;
     });
 
+    console.log("Nombre d'activités :", activityCount);
+    console.log('Nombre de marqueurs :', activityCount);
     // Nettoyage lors du démontage
     return () => {
       controls.dispose();

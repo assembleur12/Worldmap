@@ -86,7 +86,7 @@ def send_random_logs():
         send_log_to_loki(random_log)
         
         # Attendre entre 1 et 5 secondes avant d'envoyer un autre log
-        time.sleep(random.uniform(1, 5))  # Attendre entre 1 et 5 secondes
+        time.sleep(random.uniform(1, 2))  # Attendre entre 1 et 5 secondes
 
 if __name__ == "__main__":
     send_random_logs()

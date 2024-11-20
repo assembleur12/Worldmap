@@ -1,26 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import * as THREE from 'three';
 import { Activity } from '../types';
 
 interface ParticleSystemProps {
   activities: Activity[];
-  width: number;
-  height: number;
+  scene: THREE.Scene; // La scène principale du globe
+  camera: THREE.PerspectiveCamera; // La caméra principale du globe
 }
 
-export const ParticleSystem = ({ activities, width, height }: ParticleSystemProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
+export const ParticleSystem = ({ activities, scene, camera }: ParticleSystemProps) => {
   useEffect(() => {
-    // Créer une scène, une caméra et un renderer
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(width, height);
-    if (containerRef.current) {
-      containerRef.current.appendChild(renderer.domElement);
-    }
-
     // Créer un système de particules
     const particles = new THREE.Points(
       new THREE.BufferGeometry(),
@@ -56,7 +45,6 @@ export const ParticleSystem = ({ activities, width, height }: ParticleSystemProp
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
 
-      // Randomize particle sizes slightly
       sizes[i] = 0.05 + Math.random() * 0.02;
     });
 
@@ -66,34 +54,27 @@ export const ParticleSystem = ({ activities, width, height }: ParticleSystemProp
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-    // Positionner la caméra
-    camera.position.z = 5;
-
+    // Ajouter une animation
     const animate = () => {
-      // Rotation de la scène
       particles.rotation.y += 0.001;
 
-      // Mise à jour de la taille des particules en fonction de la distance à la caméra
+      // Mettre à jour la taille des particules en fonction de la distance à la caméra
       const distance = camera.position.length();
       (particles.material as THREE.PointsMaterial).size = Math.max(0.02, 0.05 * (2 / distance));
-
-      // Rendu de la scène
-      renderer.render(scene, camera);
-
-      // Demander le prochain frame d'animation
-      requestAnimationFrame(animate);
     };
 
-    animate();
+    // Ajouter une animation à la boucle principale
+    const tick = () => {
+      animate();
+    };
 
-    // Nettoyage au démontage du composant
+    scene.userData.tick = tick;
+
+    // Nettoyage au démontage
     return () => {
-      renderer.dispose();
-      if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
-      }
+      scene.remove(particles);
     };
-  }, [activities, width, height]);
+  }, [activities, scene, camera]);
 
-  return <div ref={containerRef} style={{ width, height }} />;
+  return null; // Ce composant n'a pas de rendu DOM
 };
